@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rielaboratore Excel/CSV</title>
+    <link rel="icon" href="favicon.ico">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+    <style>
+        /* Font e reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            color: #2c3e50;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* Colori principali ispirati al branding */
+        :root {
+            --primary-blue: #003d82;
+            --primary-yellow: #ffd700;
+            --accent-blue: #0056b3;
+            --light-blue: #e3f2fd;
+            --dark-blue: #001f3f;
+            --success-green: #28a745;
+            --warning-orange: #fd7e14;
+            --light-gray: #f8f9fa;
+            --medium-gray: #6c757d;
+            --dark-gray: #343a40;
+            --border-color: #dee2e6;
+            --shadow-light: 0 2px 8px rgba(0, 61, 130, 0.1);
+            --shadow-medium: 0 4px 16px rgba(0, 61, 130, 0.15);
+        }
+
+        /* Layout principale */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow-medium);
+            overflow: hidden;
+        }
+
+        /* Header dell'applicazione */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-blue) 100%);
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,215,0,0.1)"/></svg>') repeat;
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-100px) rotate(360deg); }
+        }
+
+        .app-header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .app-header .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Sezioni principali */
+        .app-content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 50px;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .section.hidden {
+            display: none;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary-yellow);
+            position: relative;
+        }
+
+        .section-number {
+            background: var(--primary-blue);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+            margin-bottom: 5px;
+        }
+
+        .section-description {
+            color: var(--medium-gray);
+            font-size: 0.95rem;
+            margin-left: 55px;
+        }
+
+        /* Pulsanti */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            min-width: 120px;
+            height: 48px;
+            box-shadow: var(--shadow-light);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-secondary {
+            background: var(--success-green);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-tertiary {
+            background: var(--warning-orange);
+            color: white;
+        }
+
+        .btn-tertiary:hover {
+            background: #e55a00;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            min-width: 100px;
+            height: 36px;
+        }
+
+        .btn-large {
+            padding: 16px 32px;
+            font-size: 1.1rem;
+            min-width: 150px;
+            height: 56px;
+        }
+
+        /* Stati dei pulsanti */
+        .btn.loading {
+            pointer-events: none;
+            color: transparent;
+        }
+
+        .btn.loading::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn.success {
+            background: var(--success-green) !important;
+        }
+
+        .btn.success::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        /* Sezione caricamento file */
+        .file-upload-area {
+            border: 3px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: var(--light-gray);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            border-color: var(--primary-blue);
+            background: var(--light-blue);
+        }
+
+        .file-upload-area.dragover {
+            border-color: var(--primary-yellow);
+            background: #fff9c4;
+            transform: scale(1.02);
+        }
+
+        .file-icon {
+            font-size: 3rem;
+            color: var(--primary-blue);
+            margin-bottom: 20px;
+        }
+
+        .file-info {
+            margin-top: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-blue);
+            font-weight: 500;
+        }
+
+        /* Controlli colonne */
+        .column-controls {
+            background: var(--light-gray);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-link {
+            color: var(--primary-blue);
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .control-link:hover {
+            background: var(--light-blue);
+            transform: translateY(-1px);
+        }
+
+        .form-input {
+            padding: 10px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(0, 61, 130, 0.1);
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+            margin-left: 10px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--primary-blue);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Lista colonne */
+        .column-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .column-item {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .column-item:hover {
+            border-color: var(--primary-blue);
+            box-shadow: var(--shadow-light);
+            transform: translateY(-2px);
+        }
+
+        .column-item.deselected {
+            opacity: 0.5;
+            background: #f8f9fa;
+        }
+
+        .column-item.deselected .column-names {
+            text-decoration: line-through;
+        }
+
+        .drag-handle {
+            cursor: move;
+            color: var(--medium-gray);
+            font-size: 1.2rem;
+            padding: 5px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .drag-handle:hover {
+            background: var(--light-blue);
+            color: var(--primary-blue);
+        }
+
+        .column-checkbox {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary-blue);
+            cursor: pointer;
+        }
+
+        .column-names {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .original-name {
+            font-weight: 600;
+            color: var(--dark-gray);
+            background: var(--light-blue);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .arrow {
+            color: var(--primary-blue);
+            font-weight: bold;
+        }
+
+        .column-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .column-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(0, 61, 130, 0.1);
+        }
+
+        /* Anteprima tabella */
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .preview-container {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .preview-table th {
+            background: var(--primary-blue);
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .preview-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .preview-table tr:nth-child(even) {
+            background: var(--light-gray);
+        }
+
+        .preview-table tr:hover {
+            background: var(--light-blue);
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: var(--medium-gray);
+            font-size: 1.1rem;
+        }
+
+        .no-data::before {
+            content: '📊';
+            display: block;
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        /* Azioni finali */
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        /* Overlay per selezione foglio */
+        .sheet-selector {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .sheet-selector-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            box-shadow: var(--shadow-medium);
+        }
+
+        .sheet-selector-box h3 {
+            color: var(--primary-blue);
+            margin-bottom: 25px;
+            font-size: 1.5rem;
+        }
+
+        .sheet-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .app-content {
+                padding: 20px;
+            }
+
+            .app-header {
+                padding: 20px;
+            }
+
+            .app-header h1 {
+                font-size: 2rem;
+            }
+
+            .column-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .control-group {
+                justify-content: center;
+            }
+
+            .column-item {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+
+            .column-names {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .actions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animazioni di caricamento */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Nascondere input file */
+        .hidden-input {
+            display: none;
+        }
+
+        /* Stili per notifiche */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1500;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.success {
+            background: var(--success-green);
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <div class="app-header">
+            <h1>Rielaboratore di Fogli di Calcolo</h1>
+            <p class="subtitle">Strumento professionale per la gestione e trasformazione di dati Excel e CSV</p>
+        </div>
+
+        <div class="app-content">
+            <section class="section" id="sezione-caricamento">
+                <div class="section-header">
+                    <div class="section-number">1</div>
+                    <div>
+                        <h2 class="section-title">Caricamento File</h2>
+                        <p class="section-description">Seleziona un file Excel (.xlsx, .xls) o CSV da elaborare</p>
+                    </div>
+                </div>
+                
+                <div class="file-upload-area" id="file-upload-area">
+                    <div class="file-icon">📁</div>
+                    <label for="file-input" class="btn btn-primary btn-large">
+                        <span>Scegli File</span>
+                    </label>
+                    <input type="file" id="file-input" class="hidden-input" accept=".xlsx, .xls, .csv">
+                    <div class="file-info" id="file-info">Nessun file selezionato</div>
+                </div>
+            </section>
+
+            <section class="section hidden" id="sezione-colonne">
+                <div class="section-header">
+                    <div class="section-number">2</div>
+                    <div>
+                        <h2 class="section-title">Gestione Colonne</h2>
+                        <p class="section-description">Seleziona, rinomina e riordina le colonne del tuo dataset</p>
+                    </div>
+                </div>
+
+                <div class="column-controls">
+                    <div class="control-group">
+                        <a href="#" class="control-link" id="select-all">Seleziona tutte</a>
+                        <a href="#" class="control-link" id="deselect-all">Deseleziona tutte</a>
+                        <button class="btn btn-tertiary btn-small" id="reset-names">Ripristina nomi</button>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label for="show-only-selected-toggle">Mostra solo selezionate</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="show-only-selected-toggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="control-group">
+                        <input type="text" class="form-input" id="column-filter" placeholder="Filtra colonne per nome..." style="width: 250px;">
+                    </div>
+                </div>
+                
+                <ul class="column-list" id="lista-colonne"></ul>
+            </section>
+
+            <section class="section hidden" id="sezione-anteprima">
+                <div class="section-header">
+                    <div class="section-number">3</div>
+                    <div>
+                        <h2 class="section-title">Anteprima Dati</h2>
+                        <p class="section-description">Visualizza un'anteprima delle prime 10 righe del dataset elaborato</p>
+                    </div>
+                </div>
+
+                <div class="preview-header">
+                    <div></div>
+                    <button class="btn btn-secondary btn-small" id="refresh-preview-btn">
+                        <span>Aggiorna Anteprima</span>
+                    </button>
+                </div>
+                
+                <div class="preview-container" id="preview-container">
+                    <div class="no-data">Carica un file per visualizzare l'anteprima</div>
+                </div>
+            </section>
+
+            <section class="section hidden" id="sezione-azioni">
+                <div class="section-header">
+                    <div class="section-number">4</div>
+                    <div>
+                        <h2 class="section-title">Esportazione e Salvataggio</h2>
+                        <p class="section-description">Esporta i dati elaborati o salva le regole di trasformazione</p>
+                    </div>
+                </div>
+
+                <div class="actions-grid">
+                    <button class="btn btn-primary btn-large" id="export-excel">
+                        <span>Esporta in Excel</span>
+                    </button>
+                    <button class="btn btn-primary btn-large" id="export-csv">
+                        <span>Esporta in CSV</span>
+                    </button>
+                    <button class="btn btn-secondary btn-large" id="save-rules">
+                        <span>Salva Regole</span>
+                    </button>
+                    <label for="load-rules-input" class="btn btn-tertiary btn-large">
+                        <span>Carica Regole</span>
+                    </label>
+                </div>
+                
+                <input type="file" id="load-rules-input" class="hidden-input" accept=".json">
+            </section>
+        </div>
+    </div>
+
+    <div class="sheet-selector" id="sheet-selector">
+        <div class="sheet-selector-box">
+            <h3>Seleziona il foglio da elaborare</h3>
+            <div class="sheet-buttons" id="sheet-buttons"></div>
+            <button class="btn btn-tertiary" id="cancel-sheet-selection">Annulla</button>
+        </div>
+    </div>
+
+    <script>
+        // Elementi DOM
+        const fileInfo = document.getElementById('file-info');
+        const fileInput = document.getElementById('file-input');
+        const fileUploadArea = document.getElementById('file-upload-area');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const sezioneColonne = document.getElementById('sezione-colonne');
+        const sezioneAnteprima = document.getElementById('sezione-anteprima');
+        const sezioneAzioni = document.getElementById('sezione-azioni');
+        const listaColonne = document.getElementById('lista-colonne');
+        const sheetSelector = document.getElementById('sheet-selector');
+        const sheetButtons = document.getElementById('sheet-buttons');
+        const cancelSheetBtn = document.getElementById('cancel-sheet-selection');
+        const previewContainer = document.getElementById('preview-container');
+        
+        const selectAllBtn = document.getElementById('select-all');
+        const deselectAllBtn = document.getElementById('deselect-all');
+        const resetNamesBtn = document.getElementById('reset-names');
+        const columnFilterInput = document.getElementById('column-filter');
+        const showOnlySelectedToggle = document.getElementById('show-only-selected-toggle');
+        const refreshPreviewBtn = document.getElementById('refresh-preview-btn');
+        const exportExcelBtn = document.getElementById('export-excel');
+        const exportCsvBtn = document.getElementById('export-csv');
+        const saveRulesBtn = document.getElementById('save-rules');
+        const loadRulesInput = document.getElementById('load-rules-input');
+
+        let originalData = [], originalHeaders = [], currentWorkbook = null, sortableInstance = null;
+        let currentFileName = '';
+        
+        // Utility functions
+        function showLoading() {
+            loadingOverlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+
+        function setButtonState(button, state, text) {
+            const span = button.querySelector('span');
+            button.classList.remove('loading', 'success');
+            
+            if (state === 'loading') {
+                button.classList.add('loading');
+                span.textContent = text || 'Caricamento...';
+            } else if (state === 'success') {
+                button.classList.add('success');
+                span.textContent = text || 'Completato!';
+                setTimeout(() => {
+                    button.classList.remove('success');
+                    span.textContent = span.dataset.originalText || 'Azione';
+                }, 2000);
+            } else {
+                span.textContent = text || span.dataset.originalText || 'Azione';
+            }
+        }
+
+        // Inizializzazione
+        document.querySelectorAll('.btn span').forEach(span => {
+            span.dataset.originalText = span.textContent;
+        });
+
+        // Drag and drop
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('dragover');
+        });
+
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('dragover');
+        });
+
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFile({ target: { files: files } });
+            }
+        });
+
+        // Gestione dell'upload tramite click sull'area
+        fileUploadArea.addEventListener('click', (e) => {
+            if (e.target === fileUploadArea || e.target.closest('.file-icon')) {
+                fileInput.click();
+            }
+        });
+
+        // Event listeners
+        fileInput.addEventListener('change', handleFile);
+        cancelSheetBtn.addEventListener('click', () => sheetSelector.style.display = 'none');
+        sheetSelector.addEventListener('click', (e) => {
+            if (e.target === sheetSelector) sheetSelector.style.display = 'none';
+        });
+        
+        refreshPreviewBtn.addEventListener('click', () => {
+            setButtonState(refreshPreviewBtn, 'loading', 'Aggiornamento...');
+            setTimeout(() => {
+                updatePreview();
+                setButtonState(refreshPreviewBtn, 'success', 'Aggiornato!');
+            }, 500);
+        });
+
+        selectAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            listaColonne.querySelectorAll('.column-item').forEach(item => {
+                item.querySelector('.column-checkbox').checked = true;
+                item.classList.remove('deselected');
+            });
+            updatePreview();
+            applyColumnListFilter();
+            showNotification('Tutte le colonne sono state selezionate');
+        });
+        
+        deselectAllBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            listaColonne.querySelectorAll('.column-item').forEach(item => {
+                item.querySelector('.column-checkbox').checked = false;
+                item.classList.add('deselected');
+            });
+            updatePreview();
+            applyColumnListFilter();
+            showNotification('Tutte le colonne sono state deselezionate');
+        });
+
+        resetNamesBtn.addEventListener('click', () => {
+            setButtonState(resetNamesBtn, 'loading', 'Ripristino...');
+            setTimeout(() => {
+                listaColonne.querySelectorAll('.column-item').forEach(item => {
+                    item.querySelector('.column-input').value = item.dataset.originalName;
+                });
+                updatePreview();
+                setButtonState(resetNamesBtn, 'success', 'Ripristinato!');
+                showNotification('Nomi delle colonne ripristinati');
+            }, 300);
+        });
+
+        columnFilterInput.addEventListener('input', applyColumnListFilter);
+        showOnlySelectedToggle.addEventListener('change', applyColumnListFilter);
+
+        exportExcelBtn.addEventListener('click', () => {
+            setButtonState(exportExcelBtn, 'loading', 'Esportazione...');
+            setTimeout(() => {
+                exportTo('xlsx');
+                setButtonState(exportExcelBtn, 'success', 'Esportato!');
+            }, 1000);
+        });
+
+        exportCsvBtn.addEventListener('click', () => {
+            setButtonState(exportCsvBtn, 'loading', 'Esportazione...');
+            setTimeout(() => {
+                exportTo('csv');
+                setButtonState(exportCsvBtn, 'success', 'Esportato!');
+            }, 1000);
+        });
+
+        saveRulesBtn.addEventListener('click', () => {
+            setButtonState(saveRulesBtn, 'loading', 'Salvataggio...');
+            setTimeout(() => {
+                saveRules();
+                setButtonState(saveRulesBtn, 'success', 'Salvato!');
+            }, 500);
+        });
+
+        loadRulesInput.addEventListener('change', loadRules);
+
+        // Core functions
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            currentFileName = file.name;
+            resetApp();
+            showLoading();
+            fileInfo.textContent = `Caricamento di: ${currentFileName}...`;
+            
+            const reader = new FileReader();
+            
+            reader.onload = (e) => {
+                const data = e.target.result;
+                fileInfo.textContent = `File letto in memoria. Elaborazione in corso...`;
+                
+                setTimeout(() => {
+                    try {
+                        currentWorkbook = XLSX.read(data, { type: 'array', cellDates: true });
+                        hideLoading();
+                        
+                        if (currentWorkbook.SheetNames.length > 1) {
+                            showSheetSelector(currentWorkbook.SheetNames);
+                        } else if (currentWorkbook.SheetNames.length === 1) {
+                            processSheet(currentWorkbook.SheetNames[0]);
+                        } else {
+                            throw new Error("Il file non contiene fogli di lavoro validi.");
+                        }
+                    } catch (err) {
+                        hideLoading();
+                        console.error("Errore lettura file:", err);
+                        showNotification(`Impossibile elaborare il file "${currentFileName}". Potrebbe essere corrotto, protetto da password o in un formato non supportato.`, 'error');
+                        resetApp();
+                    }
+                }, 100);
+            };
+            
+            reader.onerror = () => {
+                hideLoading();
+                showNotification("Si è verificato un errore di sistema durante la lettura del file.", 'error');
+                resetApp();
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        function resetApp() {
+            originalData = []; 
+            originalHeaders = []; 
+            currentWorkbook = null; 
+            currentFileName = '';
+            listaColonne.innerHTML = '';
+            previewContainer.innerHTML = '<div class="no-data">Carica un file per visualizzare l\'anteprima</div>';
+            columnFilterInput.value = '';
+            showOnlySelectedToggle.checked = false;
+            sezioneColonne.classList.add('hidden');
+            sezioneAnteprima.classList.add('hidden');
+            sezioneAzioni.classList.add('hidden');
+            fileInfo.textContent = 'Nessun file selezionato';
+            fileInput.value = '';
+            if (sortableInstance) sortableInstance.destroy();
+        }
+
+        function processSheet(sheetName) {
+            try {
+                showLoading();
+                const worksheet = currentWorkbook.Sheets[sheetName];
+                const dataAsJson = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                if (dataAsJson.length === 0) {
+                    const headerData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+                    if (headerData.length > 0 && headerData[0].length > 0) {
+                        originalHeaders = headerData[0].map(h => h ? h.toString() : "");
+                        originalData = [];
+                    } else {
+                       throw new Error("Il foglio è completamente vuoto.");
+                    }
+                } else {
+                    originalHeaders = Object.keys(dataAsJson[0]);
+                    originalData = dataAsJson;
+                }
+                
+                fileInfo.textContent = `File: ${currentFileName} | Foglio: ${sheetName} | Righe: ${originalData.length}`;
+                
+                populateColumnList(originalHeaders);
+                sezioneColonne.classList.remove('hidden');
+                sezioneAnteprima.classList.remove('hidden');
+                sezioneAzioni.classList.remove('hidden');
+                updatePreview();
+                hideLoading();
+                showNotification('File caricato con successo!');
+            } catch (err) {
+                hideLoading();
+                showNotification("Errore durante l'elaborazione del foglio: " + err.message, 'error');
+                resetApp();
+            }
+        }
+        
+        function populateColumnList(headers) {
+            listaColonne.innerHTML = '';
+            
+            headers.forEach(header => {
+                const li = document.createElement('li');
+                li.className = 'column-item';
+                li.dataset.originalName = header;
+
+                const dragHandle = document.createElement('span');
+                dragHandle.className = 'drag-handle';
+                dragHandle.textContent = '☰';
+                dragHandle.title = 'Trascina per riordinare';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'column-checkbox';
+                checkbox.checked = true;
+                checkbox.title = 'Seleziona/deseleziona colonna';
+
+                const namesDiv = document.createElement('div');
+                namesDiv.className = 'column-names';
+
+                const originalNameSpan = document.createElement('span');
+                originalNameSpan.className = 'original-name';
+                originalNameSpan.textContent = header;
+
+                const arrowSpan = document.createElement('span');
+                arrowSpan.className = 'arrow';
+                arrowSpan.textContent = '→';
+
+                const textInput = document.createElement('input');
+                textInput.type = 'text';
+                textInput.className = 'column-input';
+                textInput.value = header;
+                textInput.placeholder = "Nuovo nome colonna";
+
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        li.classList.remove('deselected');
+                    } else {
+                        li.classList.add('deselected');
+                    }
+                    updatePreview();
+                    applyColumnListFilter();
+                });
+
+                textInput.addEventListener('input', updatePreview);
+
+                namesDiv.appendChild(originalNameSpan);
+                namesDiv.appendChild(arrowSpan);
+                namesDiv.appendChild(textInput);
+
+                li.appendChild(dragHandle);
+                li.appendChild(checkbox);
+                li.appendChild(namesDiv);
+                
+                listaColonne.appendChild(li);
+            });
+            
+            if (sortableInstance) sortableInstance.destroy();
+            sortableInstance = new Sortable(listaColonne, { 
+                animation: 150, 
+                handle: '.drag-handle',
+                onEnd: updatePreview
+            });
+        }
+        
+        function getRulesFromUI() {
+            const rules = [];
+            listaColonne.querySelectorAll('li.column-item').forEach(item => {
+                rules.push({
+                    original: item.dataset.originalName,
+                    isKept: item.querySelector('.column-checkbox').checked,
+                    newName: item.querySelector('.column-input').value || item.dataset.originalName
+                });
+            });
+            return rules;
+        }
+
+        function formatValue(value) {
+            if (value instanceof Date && !isNaN(value)) {
+                const day = String(value.getDate()).padStart(2, '0');
+                const month = String(value.getMonth() + 1).padStart(2, '0');
+                const year = value.getFullYear();
+                return `${day}/${month}/${year}`;
+            }
+            if (value === null || value === undefined) {
+                return "";
+            }
+            return value;
+        }
+
+        function updatePreview() {
+            const rules = getRulesFromUI().filter(rule => rule.isKept);
+
+            if (rules.length === 0) {
+                previewContainer.innerHTML = '<div class="no-data">Nessuna colonna selezionata per l\'anteprima</div>';
+                return;
+            }
+            
+            if (originalData.length === 0) {
+                previewContainer.innerHTML = '<div class="no-data">Il file non contiene righe di dati</div>';
+                return;
+            }
+
+            const headers = rules.map(rule => rule.newName);
+            const previewData = originalData.slice(0, 10).map(row => {
+                const newRow = {};
+                rules.forEach(rule => { 
+                    newRow[rule.newName] = row[rule.original]; 
+                });
+                return newRow;
+            });
+            
+            let tableHTML = '<table class="preview-table"><thead><tr>';
+            headers.forEach(h => tableHTML += `<th>${h}</th>`);
+            tableHTML += '</tr></thead><tbody>';
+
+            previewData.forEach(row => {
+                tableHTML += '<tr>';
+                headers.forEach(h => {
+                    tableHTML += `<td>${formatValue(row[h])}</td>`;
+                });
+                tableHTML += '</tr>';
+            });
+            
+            tableHTML += '</tbody></table>';
+            previewContainer.innerHTML = tableHTML;
+        }
+        
+        function applyColumnListFilter() {
+            const filterText = columnFilterInput.value.toLowerCase();
+            const showOnlySelected = showOnlySelectedToggle.checked;
+            
+            listaColonne.querySelectorAll('.column-item').forEach(item => {
+                const name = item.dataset.originalName.toLowerCase();
+                const isSelected = item.querySelector('.column-checkbox').checked;
+
+                const matchesText = name.includes(filterText);
+                const matchesSelection = !showOnlySelected || isSelected;
+
+                if (matchesText && matchesSelection) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        function exportTo(format) {
+            const activeRules = getRulesFromUI().filter(rule => rule.isKept);
+            if (activeRules.length === 0) {
+                showNotification("Nessuna colonna selezionata per l'esportazione", 'error');
+                return;
+            }
+
+            let processedData = originalData.map(row => {
+                const newRow = {};
+                activeRules.forEach(rule => {
+                    newRow[rule.newName] = row[rule.original];
+                });
+                return newRow;
+            });
+
+            if (format === 'csv') {
+                processedData = processedData.map(row => {
+                    const formattedRow = {};
+                    for (const key in row) {
+                        formattedRow[key] = formatValue(row[key]);
+                    }
+                    return formattedRow;
+                });
+            }
+
+            const newWorksheet = XLSX.utils.json_to_sheet(processedData);
+            const newWorkbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(newWorkbook, newWorksheet, 'Rielaborato');
+            
+            const originalFileName = currentFileName.split('.').slice(0, -1).join('.');
+            const exportFileName = `${originalFileName}_rielaborato.${format}`;
+            
+            XLSX.writeFile(newWorkbook, exportFileName, { bookType: format });
+            showNotification(`File esportato come: ${exportFileName}`);
+        }
+
+        function saveRules() {
+            const rules = getRulesFromUI();
+            if (rules.length === 0) {
+                showNotification("Nessuna regola da salvare", 'error');
+                return;
+            }
+            
+            const blob = new Blob([JSON.stringify(rules, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'regole_rielaborazione.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(a.href);
+            showNotification('Regole salvate con successo');
+        }
+        
+        function loadRules(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (originalData.length === 0 && originalHeaders.length === 0) {
+                showNotification("Carica prima un file Excel/CSV per poter applicare le regole", 'error');
+                event.target.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const rules = JSON.parse(e.target.result);
+                    applyRulesToUI(rules);
+                    updatePreview();
+                    applyColumnListFilter();
+                    showNotification('Regole caricate e applicate con successo');
+                } catch (err) { 
+                    showNotification("Il file di regole non è un JSON valido", 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function showSheetSelector(sheetNames) {
+            sheetButtons.innerHTML = '';
+            sheetNames.forEach(name => {
+                const button = document.createElement('button');
+                button.textContent = name;
+                button.className = 'btn btn-primary';
+                button.addEventListener('click', () => { 
+                    sheetSelector.style.display = 'none'; 
+                    processSheet(name); 
+                });
+                sheetButtons.appendChild(button);
+            });
+            sheetSelector.style.display = 'flex';
+        }
+        
+        function applyRulesToUI(rules) {
+            const currentHeaders = new Set(originalHeaders);
+            const ruleHeaders = new Set(rules.map(r => r.original));
+            
+            if (JSON.stringify([...currentHeaders].sort()) !== JSON.stringify([...ruleHeaders].sort())) {
+                if (!confirm("Attenzione: le colonne nel file di regole non corrispondono a quelle del file caricato. Applicare comunque?")) {
+                    return;
+                }
+            }
+            
+            const uiItemsMap = new Map();
+            listaColonne.querySelectorAll('li.column-item').forEach(item => {
+                uiItemsMap.set(item.dataset.originalName, item);
+            });
+            
+            const orderedItems = [];
+            rules.forEach(rule => {
+                const item = uiItemsMap.get(rule.original);
+                if (item) {
+                    const checkbox = item.querySelector('.column-checkbox');
+                    checkbox.checked = rule.isKept;
+                    item.querySelector('.column-input').value = rule.newName;
+                    
+                    if (rule.isKept) {
+                        item.classList.remove('deselected');
+                    } else {
+                        item.classList.add('deselected');
+                    }
+                    
+                    orderedItems.push(item);
+                    uiItemsMap.delete(rule.original);
+                }
+            });
+            
+            uiItemsMap.forEach(item => orderedItems.push(item));
+            
+            listaColonne.innerHTML = '';
+            orderedItems.forEach(item => listaColonne.appendChild(item));
+            
+            // Reinizializza Sortable dopo aver riordinato gli elementi
+            if (sortableInstance) sortableInstance.destroy();
+            sortableInstance = new Sortable(listaColonne, { 
+                animation: 150, 
+                handle: '.drag-handle',
+                onEnd: updatePreview
+            });
+        }
+
+        // Gestione della tastiera per accessibilità
+        document.addEventListener('keydown', (e) => {
+            // Esc per chiudere il selettore fogli
+            if (e.key === 'Escape' && sheetSelector.style.display === 'flex') {
+                sheetSelector.style.display = 'none';
+            }
+            
+            // Ctrl+S per salvare regole (se disponibili)
+            if (e.ctrlKey && e.key === 's' && !sezioneAzioni.classList.contains('hidden')) {
+                e.preventDefault();
+                saveRulesBtn.click();
+            }
+            
+            // Ctrl+E per esportare Excel (se disponibili)
+            if (e.ctrlKey && e.key === 'e' && !sezioneAzioni.classList.contains('hidden')) {
+                e.preventDefault();
+                exportExcelBtn.click();
+            }
+        });
+
+        // Gestione del ridimensionamento della finestra
+        window.addEventListener('resize', () => {
+            // Forza l'aggiornamento del layout della tabella di anteprima
+            if (!sezioneAnteprima.classList.contains('hidden')) {
+                updatePreview();
+            }
+        });
+
+        // Pulizia quando la pagina viene chiusa
+        window.addEventListener('beforeunload', (e) => {
+            if (originalData.length > 0) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        });
+
+        // Aggiunta di effetti sonori opzionali (se supportati dal browser)
+        function playNotificationSound() {
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaBjiS1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaBjiS1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaBjiS1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaBjiS1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaBjiS1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaBjiS1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEaBjiS1/LNeSsFJHfH8N2QQAoUXrTp66hVFA==');
+                audio.volume = 0.1;
+                audio.play().catch(() => {}); // Ignora errori se l'audio non è supportato
+            } catch (e) {
+                // Audio non supportato, continua senza errori
+            }
+        }
+
+        // Migliora la funzione showNotification con il suono
+        const originalShowNotification = showNotification;
+        showNotification = function(message, type = 'success') {
+            originalShowNotification(message, type);
+            if (type === 'success') {
+                playNotificationSound();
+            }
+        };
+
+        // Versioning e info dell'applicazione
+        console.log('Rielaboratore Excel/CSV v2.0 - Interfaccia Rinnovata');
+        console.log('Funzionalità principali: Caricamento, Gestione Colonne, Anteprima, Esportazione');
+        console.log('Supporto formati: Excel (.xlsx, .xls), CSV');
+        
+        // Inizializzazione animazioni delle sezioni
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.section').forEach((section, index) => {
+                section.style.animationDelay = `${index * 0.1}s`;
+            });
+        });
+
+        // Inizializzazione completata
+        document.body.classList.add('app-loaded');
+        
+    </script>
+</body>
+</html>
